@@ -79,4 +79,16 @@ Memoization기법을 이용하면 최초에 수행 이후엔 결과값을 저장
 예를 들어  사람이 아주 많은 식당에서 식사를 하는데 우리가 시킨 메뉴가 엄청 독특하다면 지나가는 사람마다 메뉴가 뭔지 물어본다. 이런 질문을 받을때마다 내가 뭘 시켰는지 메뉴판에서 찾아보고 다시 대답을 해주지 않는다. 보통은 한번 주문하면 메뉴의 이름을 외우기 때문에(Memoization) 바로 머리속에 있는 정보를 꺼내오기만 해서 메뉴의 이름을 답변해준다. 바로 이게 Memoization이다. 그리고 리액트에서는 useMemo를 이용해서 이 Memoization기법을 이용해서 결과값을 기억할 수 있게 된다.
 useMemo를 이용해서 컴포넌트 내부에 불필요한 연산을 방지하여 최적화하는 방법을 알아보자. 이전에 만들었던 todolist app에는 당장은 불필요한 연산이없다. 그렇기에 List컴포넌트 안에 현재의 todo들의 상태를 분석해서 수치를 제공하는 함수를 만들어보자. 컴포넌트맨아래 return문 위에 const getAnalizedData라는 화살표 함수를 만들고 함수 내부에 const totalCount라고 해서 현재 등록된 전체 todoitem의 갯수를 저장해보자. 그래서 todos state에 length라는 값으로 초기화를 해주고 const doneCount라고 해서 전체 todo중 완료된 todo의 갯수를 저장할 것인데 값으로는 todos.filter메서드를 사용해서 callback함수로 todo.isDone이 true인 아이템들만 필터링해서 length로 길이를 저장해두자. 그리고 마지막으로 const notDoneCount로 완료되지 않은 todo의 갯수를 저장해보자. totalCount에서 doneCount를 뺀값을 저장해주자.  그리고 세가지를 RETURN객체로 묶어서 내보내주자. 그러면 이제 List컴포넌트가 리렌더링 될때마다 List컴포넌트 안에서 RETURN문 위에 getAnalizedData함수를 호출해주고 그결과값을 구조분해할당을 이용해서 순서대로 totalCount, doneCount, notDoneCount를 받아와주자. 그리고 나서 이렇게 구한 수치값들을 렌더링해주기 위해 컴포넌트 return문안에 h2태그 아래에 div태그를 하나 선언하고 그 내부에 div로 total = {totalCount} done={doneCount}, notDong={notDoneCount}라고 적어주자. 그러면 이제 브라우저에 새로고침해보면 분석된 수치값들이 잘 렌더링 될 것이다.
 
-----
+이렇게 리스트 컴포넌트에 새로운 기능인 현재 todo를 분석하는 함수를 만들었는데 이때 이 연산과정은 filter라는 메서드를 이용하고 있기에 todo state에 보관된 data의 갯수가 증가하면 증가할 수록 훨씬더 오래걸리는 함수가 될것이다. (filter메서드는 전체 요소를 한번씩 순회하기 때문임.) 그래서 최대한 이 함수가 불필요하게 호출되는 상황을 방지해야 하는데 이 함수는 컴포넌트 내에서 그냥 바로 호출하고 있기에 List컴포넌트가 리렌더링될때마다 계속 새롭게 호출이 될것이다. getAnalizedData()함수 맨 위에 console.log("getAnalizedData() 호출")을 작성해주고 보면 List컴포넌트가 최초에 렌더링될때 한번 출력이 되고 List컴포넌트안에서 state를 관리하고 있는 search bar에 react라고 검색해보면 콘솔에 메세지가 5회 발생하는것을 보면 리렌더링 횟수만큼 함수가 호출 되는것을 알 수 있다. 
+이건 명백한 낭비이다.  왜냐면 search bar에 뭔가를 검색한다고 todo에 대한 정보가 변경되는 것이 아니기에 계속 조회해야할 필요가 없다. 추가, 수정, 삭제시에만 다시 호출하는게 맞기에 연산자체를 memoization할 수 있는 방법이 필요한데 이럴때 useMemo를 사용하는 것이다. 
+useMemo를 사용하면 이 연산 자체를 Memoization 할 수있고 특정 조건이 만족할 때에만 결과값을 다시 계산하게 설정할 수 있다.
+useMemo를 먼저 import하고 컴포넌트 내부에 useMemo를 호출해주고 첫번째 인수로 callback함수를 넣고 두번째 인수로 배열을 넣어주면 되는데 두번째 인수가 deps(의존성배열)이다. useEffect처럼 deps에 포함된 값이 변경되었을때만 callback함수를 다시실행하고 그리고 그 callback함수가 반환하는 값을 useMemo가 그대로 반환해준다. 그냥 return 1을 해주면 그 결과값을 받아서 사용까지할 수 있는 hook이다.
+그렇기에 useMemo의 첫번째 매개변수, callback함수에는 Memoization하고 싶은 내용을 적어주면 되는데 우리는 getAnalizedData함수의 내용을 그대로 넣어주자. 그러면 useMemo는 우리가 첫번째 인수로 전달한 callback함수가 반환하는 값을 그대로 반환해준다. 그래서 결국 이렇게 호출한 useMemo의 반환값은 이 객체이기 때문에 getAnalizedData를 호출했을때 했던것 처럼 동일하게 const [totalCount, doneCount, notDoneCount] = useMemo(.. 도 가능하다. 그리고 getAnalizedData함수도 useMemo안에서 연산을 하기에 필요가 없어진다.
+
+지금까지 나온 useMemo에 대한 내용은 
+
+1. 첫번째 인수로 전달한 Callback함수는 내부에서 발생한 결과값을 그대로 반환해준다.
+2. 첫번째 인수로 전달한 Callback함수의 내용을 Memoization한다.
+
+이러면 메세지는 딱한번만 출력이 되면서 useMemo는 딱한번만 출력이 된다. 그런데 이때 경고메세지가 나오는데 난
+
