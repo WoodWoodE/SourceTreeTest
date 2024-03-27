@@ -31,8 +31,7 @@ function App() {
       isDone:false,
       content:content,
       date:new Date().getTime(),
-    }
-
+    }    
     setTodos(
       [
       newTodo,
@@ -41,11 +40,32 @@ function App() {
     )
   }
 
+  const onUpdate = (targetId) => {
+    setTodos(todos.map((todo)=>{
+      if(targetId == todo.id) {
+        return {
+          ...todo,
+          isDone : !todo.isDone
+        }
+      }
+      return todo
+    }))
+  }
+
+  const onDelete = (targetId) => {
+    setTodos(todos.filter((todo)=> {
+      if(targetId == todo.id){
+        return;
+      }
+      return todo;
+    }))
+  }
+
   return (
     <div className='App'>
       <Header/>
       <Editor onCreate={onCreate}/>
-      <List todos={todos}/>
+      <List todos={todos} onUpdate={onUpdate} onDelete={onDelete}/>
     </div>
   )
 }
